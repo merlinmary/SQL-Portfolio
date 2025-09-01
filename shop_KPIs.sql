@@ -108,7 +108,7 @@ with
           source_sub_id as pendingsourcesubid
         FROM (
           SELECT
-            * EXCEPT (rank) 
+            *
           FROM (
             SELECT 
               uuid,
@@ -121,10 +121,9 @@ with
               updated_ts,
               source_sub_id,
               operationType,
-              metadata,
-              ROW_NUMBER() OVER(PARTITION BY id ORDER BY loadTime DESC) rank 
+              metadata
            FROM `transaction.pending_bolts`  #path to BigQuery table
-           QUALIFY rank = 1
+           QUALIFY ROW_NUMBER() OVER(PARTITION BY id ORDER BY loadTime DESC) = 1
            )
           WHERE 
             operationType != 'delete' 
@@ -137,48 +136,38 @@ with
     SELECT distinct * FROM pendingBolts
   ),
   ledgerExtract as (
-    SELECT 
-      * EXCEPT( rank, rank2) 
+    SELECT
+      *
     FROM (
       SELECT
-        *, 
-        ROW_NUMBER() OVER (
-          PARTITION BY ledger_source_id, ledger_source_sub_id 
-          ORDER BY ledger_load_time DESC
-        ) rank2
-      FROM (
-        SELECT 
-          country, 
-          currency_id,
-          exchange_rate,
-          type_id,
-          source_type_id AS ledger_type_id,
-          amount AS ledger_amount,
-          device_name AS device,
-          platform_id AS platform,
-          uuid as ledger_uuid,
-          source_sub_id as ledger_source_sub_id,
-          source_id as ledger_source_id,
-          operationType,
-          created_ts as ledger_created_ts,
-          loadTime as ledger_load_time, 
-          ROW_NUMBER() OVER (PARTITION BY id ORDER BY loadTime DESC) rank 
-        FROM (
-          SELECT 
-            * 
-          FROM 
-            `transaction.ledger` #path to BigQuery table
-          WHERE 
-            type_id= 1 
-            and source_type_id=16
-        )
-        QUALIFY rank = 1  
-      )
-      WHERE 
-        operationType!='delete' 
-        and ledger_created_ts > "2021-06-01"
-      QUALIFY rank2 = 1
-    ) 
+        country,
+        currency_id,
+        exchange_rate,
+        type_id,
+        source_type_id AS ledger_type_id,
+        amount AS ledger_amount,
+        device_name AS device,
+        platform_id AS platform,
+        uuid as ledger_uuid,
+        source_sub_id as ledger_source_sub_id,
+        source_id as ledger_source_id,
+        operationType,
+        created_ts as ledger_created_ts,
+        loadTime as ledger_load_time
+      FROM
+        `transaction.ledger` #path to BigQuery table
+      WHERE
+        type_id= 1
+        and source_type_id=16
+      QUALIFY ROW_NUMBER() OVER (PARTITION BY id ORDER BY loadTime DESC) = 1
+    )
+    WHERE
+      operationType!='delete'
+      and ledger_created_ts > "2021-06-01"
+    QUALIFY ROW_NUMBER() OVER (
+      PARTITION BY ledger_source_id, ledger_source_sub_id
+      ORDER BY ledger_load_time DESC
+    ) = 1
   ),
   join1 as (
     SELECT 
