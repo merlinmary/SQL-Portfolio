@@ -122,9 +122,9 @@ with
               source_sub_id,
               operationType,
               metadata
-           FROM `transaction.pending_bolts`  #path to BigQuery table
-           QUALIFY ROW_NUMBER() OVER(PARTITION BY id ORDER BY loadTime DESC) = 1
-           )
+            FROM `transaction.pending_bolts`  #path to BigQuery table
+            QUALIFY ROW_NUMBER() OVER(PARTITION BY id ORDER BY loadTime DESC) = 1
+          )
           WHERE 
             operationType != 'delete' 
             and status_id in (1,4,5,6)
